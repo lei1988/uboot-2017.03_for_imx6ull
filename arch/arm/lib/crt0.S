@@ -92,6 +92,9 @@ ENTRY(_main)
 	mov	r0, #0
 	bl	board_init_f
 
+; test_loop:
+; 	b test_loop
+
 #if ! defined(CONFIG_SPL_BUILD)
 
 /*

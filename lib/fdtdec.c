@@ -589,17 +589,16 @@ int fdtdec_check_fdt(void)
  */
 int fdtdec_prepare_fdt(void)
 {
-	if (!gd->fdt_blob || ((uintptr_t)gd->fdt_blob & 3) ||
-	    fdt_check_header(gd->fdt_blob)) {
+	if (!gd->fdt_blob || ((uintptr_t)gd->fdt_blob & 3) || fdt_check_header(gd->fdt_blob)) {
 #ifdef CONFIG_SPL_BUILD
 		puts("Missing DTB\n");
 #else
-		puts("No valid device tree binary found - please append one to U-Boot binary, use u-boot-dtb.bin or define CONFIG_OF_EMBED. For sandbox, use -d <file.dtb>\n");
+		puts("No valid device tree binary found - please append one to U-Boot binary, \
+		     use u-boot-dtb.bin or define CONFIG_OF_EMBED. For sandbox, use -d <file.dtb>\n");
 # ifdef DEBUG
 		if (gd->fdt_blob) {
 			printf("fdt_blob=%p\n", gd->fdt_blob);
-			print_buffer((ulong)gd->fdt_blob, gd->fdt_blob, 4,
-				     32, 0);
+			print_buffer((ulong)gd->fdt_blob, gd->fdt_blob, 4, 32, 0);
 		}
 # endif
 #endif
@@ -1255,8 +1254,7 @@ int fdtdec_setup(void)
 # endif
 # ifndef CONFIG_SPL_BUILD
 	/* Allow the early environment to override the fdt address */
-	gd->fdt_blob = (void *)getenv_ulong("fdtcontroladdr", 16,
-						(uintptr_t)gd->fdt_blob);
+	gd->fdt_blob = (void *)getenv_ulong("fdtcontroladdr", 16, (uintptr_t)gd->fdt_blob);
 # endif
 #endif
 	return fdtdec_prepare_fdt();

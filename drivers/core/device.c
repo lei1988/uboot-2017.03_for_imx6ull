@@ -30,21 +30,26 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static int device_bind_common(struct udevice *parent, const struct driver *drv,
-			      const char *name, void *platdata,
-			      ulong driver_data, int of_offset,
-			      uint of_platdata_size, struct udevice **devp)
+static int device_bind_common(struct udevice *parent, 
+							  const struct driver *drv,
+			                  const char *name, 
+							  void *platdata,
+			                  ulong driver_data, 
+							  int of_offset,
+			                  uint of_platdata_size, 
+							  struct udevice **devp)
 {
 	struct udevice *dev;
 	struct uclass *uc;
 	int size, ret = 0;
 
-	if (devp)
+	if ( devp )
 		*devp = NULL;
-	if (!name)
+
+	if ( !name )
 		return -EINVAL;
 
-	ret = uclass_get(drv->id, &uc);
+	ret = uclass_get( drv->id, &uc );
 	if (ret) {
 		debug("Missing uclass for driver %s\n", drv->name);
 		return ret;
@@ -60,7 +65,7 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
 #ifdef CONFIG_DEVRES
 	INIT_LIST_HEAD(&dev->devres_head);
 #endif
-	dev->platdata = platdata;
+	dev->platdata = platdata;         
 	dev->driver_data = driver_data;
 	dev->name = name;
 	dev->of_offset = of_offset;
@@ -78,37 +83,32 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
 		 * This is just a 'requested' sequence, and will be
 		 * resolved (and ->seq updated) when the device is probed.
 		 */
-		if (uc->uc_drv->flags & DM_UC_FLAG_SEQ_ALIAS) {
+		if ( uc->uc_drv->flags & DM_UC_FLAG_SEQ_ALIAS) {
 			if (uc->uc_drv->name && of_offset != -1) {
-				fdtdec_get_alias_seq(gd->fdt_blob,
-						uc->uc_drv->name, of_offset,
-						&dev->req_seq);
+				fdtdec_get_alias_seq(gd->fdt_blob, uc->uc_drv->name, of_offset, &dev->req_seq);
 			}
 		}
 	}
 
-	if (drv->platdata_auto_alloc_size) {
+	if ( drv->platdata_auto_alloc_size ) {
 		bool alloc = !platdata;
 
 		if (CONFIG_IS_ENABLED(OF_PLATDATA)) {
 			if (of_platdata_size) {
 				dev->flags |= DM_FLAG_OF_PLATDATA;
-				if (of_platdata_size <
-						drv->platdata_auto_alloc_size)
+				if (of_platdata_size < drv->platdata_auto_alloc_size)
 					alloc = true;
 			}
 		}
 		if (alloc) {
 			dev->flags |= DM_FLAG_ALLOC_PDATA;
-			dev->platdata = calloc(1,
-					       drv->platdata_auto_alloc_size);
+			dev->platdata = calloc(1, drv->platdata_auto_alloc_size);
 			if (!dev->platdata) {
 				ret = -ENOMEM;
 				goto fail_alloc1;
 			}
 			if (CONFIG_IS_ENABLED(OF_PLATDATA) && platdata) {
-				memcpy(dev->platdata, platdata,
-				       of_platdata_size);
+				memcpy(dev->platdata, platdata,of_platdata_size);
 			}
 		}
 	}
@@ -126,8 +126,7 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
 	if (parent) {
 		size = parent->driver->per_child_platdata_auto_alloc_size;
 		if (!size) {
-			size = parent->uclass->uc_drv->
-					per_child_platdata_auto_alloc_size;
+			size = parent->uclass->uc_drv->per_child_platdata_auto_alloc_size;
 		}
 		if (size) {
 			dev->flags |= DM_FLAG_ALLOC_PARENT_PDATA;
@@ -140,15 +139,15 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
 	}
 
 	/* put dev into parent's successor list */
-	if (parent)
+	if ( parent )
 		list_add_tail(&dev->sibling_node, &parent->child_head);
 
-	ret = uclass_bind_device(dev);
+	ret = uclass_bind_device( dev );
 	if (ret)
 		goto fail_uclass_bind;
 
 	/* if we fail to bind we remove device from successors and free it */
-	if (drv->bind) {
+	if ( drv->bind ) {
 		ret = drv->bind(dev);
 		if (ret)
 			goto fail_bind;
@@ -164,10 +163,9 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
 			goto fail_uclass_post_bind;
 	}
 
-	if (parent)
-		dm_dbg("Bound device %s to %s\n", dev->name, parent->name);
-	if (devp)
-		*devp = dev;
+	if (parent){ dm_dbg("Bound device %s to %s\n", dev->name, parent->name); }
+
+	if (devp){ *devp = dev; }
 
 	dev->flags |= DM_FLAG_BOUND;
 
@@ -178,16 +176,14 @@ fail_uclass_post_bind:
 fail_child_post_bind:
 	if (CONFIG_IS_ENABLED(DM_DEVICE_REMOVE)) {
 		if (drv->unbind && drv->unbind(dev)) {
-			dm_warn("unbind() method failed on dev '%s' on error path\n",
-				dev->name);
+			dm_warn("unbind() method failed on dev '%s' on error path\n", dev->name);
 		}
 	}
 
 fail_bind:
 	if (CONFIG_IS_ENABLED(DM_DEVICE_REMOVE)) {
 		if (uclass_unbind_device(dev)) {
-			dm_warn("Failed to unbind dev '%s' on error path\n",
-				dev->name);
+			dm_warn("Failed to unbind dev '%s' on error path\n", dev->name);
 		}
 	}
 fail_uclass_bind:
@@ -233,23 +229,44 @@ int device_bind(struct udevice *parent, const struct driver *drv,
 				  devp);
 }
 
-int device_bind_by_name(struct udevice *parent, bool pre_reloc_only,
-			const struct driver_info *info, struct udevice **devp)
+/**
+ * @brief 
+ * 
+ * @param parent            NULL
+ * @param pre_reloc_only    false
+ * @param info              &root_info
+ * @param devp              (((gd_t *)gd)->dm_root)
+ * @return int 
+ */
+int device_bind_by_name(struct udevice *parent, 
+                        bool pre_reloc_only,
+			            const struct driver_info *info, 
+						struct udevice **devp)
 {
 	struct driver *drv;
 	uint platdata_size = 0;
 
-	drv = lists_driver_lookup_name(info->name);
-	if (!drv)
-		return -ENOENT;
-	if (pre_reloc_only && !(drv->flags & DM_FLAG_PRE_RELOC))
+	/**
+	 * 根据形参的info（它代表一个device info，一般都是全局对象）中的name成员来查找对应的driver，
+	 * 这些driver是全局对象，被链接在.u_boot_list_2_driver_1 ~ .u_boot_list_2_driver_3 
+	 * 段中；
+	 * 如果想回去这些driver对象，可以使用链接器属性将某一个变量映射到.u_boot_list_2_driver_1 和
+	 * u_boot_list_2_driver_3地址，然后逐个变量对象，找出与 info->name 相同的 driver 对象；
+	 * 
+	 * 最后将找到的 driver 对象返回给 drv
+	 */
+	drv = lists_driver_lookup_name( info->name );
+	if ( !drv ){ return -ENOENT; }
+
+	/* 初始化 pre_reloc_only 为false */
+	if ( pre_reloc_only && !(drv->flags & DM_FLAG_PRE_RELOC) )
 		return -EPERM;
 
 #if CONFIG_IS_ENABLED(OF_PLATDATA)
 	platdata_size = info->platdata_size;
 #endif
-	return device_bind_common(parent, drv, info->name,
-			(void *)info->platdata, 0, -1, platdata_size, devp);
+	 
+	return device_bind_common( parent, drv, info->name, (void *)info->platdata, 0, -1, platdata_size, devp);
 }
 
 static void *alloc_priv(int size, uint flags)
@@ -284,7 +301,7 @@ int device_probe(struct udevice *dev)
 	assert(drv);
 
 	/* Allocate private data if requested and not reentered */
-	if (drv->priv_auto_alloc_size && !dev->priv) {
+	if ( drv->priv_auto_alloc_size && !dev->priv ) {
 		dev->priv = alloc_priv(drv->priv_auto_alloc_size, drv->flags);
 		if (!dev->priv) {
 			ret = -ENOMEM;
@@ -330,6 +347,11 @@ int device_probe(struct udevice *dev)
 			return 0;
 	}
 
+	/* 
+	 * 识别 dev 对象的 seq号，在 struct uclass 对象的dev_head指向的链表中轮询查找
+	 * 如果找到对应的seq则返回它，如果dev_head指向的链表只有一个struct udevice对象，
+	 * 则返回0，然后更新dev->seq = seq
+	 */
 	seq = uclass_resolve_seq(dev);
 	if (seq < 0) {
 		ret = seq;
@@ -389,6 +411,7 @@ int device_probe(struct udevice *dev)
 		pinctrl_select_state(dev, "default");
 
 	return 0;
+
 fail_uclass:
 	if (device_remove(dev)) {
 		dm_warn("%s: Device '%s' failed to remove on error path\n",

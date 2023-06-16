@@ -20,24 +20,21 @@
 
 struct driver *lists_driver_lookup_name(const char *name)
 {
-	struct driver *drv =
-		ll_entry_start(struct driver, driver);
+	struct driver *drv = ll_entry_start(struct driver, driver);
 	const int n_ents = ll_entry_count(struct driver, driver);
 	struct driver *entry;
 
 	for (entry = drv; entry != drv + n_ents; entry++) {
-		if (!strcmp(name, entry->name))
+		if ( !strcmp(name, entry->name) )
 			return entry;
 	}
-
-	/* Not found */
+	
 	return NULL;
 }
 
 struct uclass_driver *lists_uclass_lookup(enum uclass_id id)
 {
-	struct uclass_driver *uclass =
-		ll_entry_start(struct uclass_driver, uclass);
+	struct uclass_driver *uclass = ll_entry_start(struct uclass_driver, uclass);
 	const int n_ents = ll_entry_count(struct uclass_driver, uclass);
 	struct uclass_driver *entry;
 
@@ -51,8 +48,10 @@ struct uclass_driver *lists_uclass_lookup(enum uclass_id id)
 
 int lists_bind_drivers(struct udevice *parent, bool pre_reloc_only)
 {
-	struct driver_info *info =
-		ll_entry_start(struct driver_info, driver_info);
+	/* 定义：U_BOOT_DEVICE(imx6_thermal) ==> 链接时放在.u_boot_list_2_driver_info_1 段  
+	 * 最终扩展的变量名： _u_boot_list_2_driver_info_2_imx6_thermal 
+	 */
+	struct driver_info *info = ll_entry_start(struct driver_info, driver_info);  
 	const int n_ents = ll_entry_count(struct driver_info, driver_info);
 	struct driver_info *entry;
 	struct udevice *dev;
@@ -60,8 +59,15 @@ int lists_bind_drivers(struct udevice *parent, bool pre_reloc_only)
 	int ret;
 
 	for (entry = info; entry != info + n_ents; entry++) {
-		ret = device_bind_by_name(parent, pre_reloc_only, entry, &dev);
-		if (ret && ret != -EPERM) {
+		/**
+		 * parent = gd->dm_root
+		 * pre_reloc_only = true
+		 * entry->name = "imx_thermal"
+		 * entry->platdata = &imx6_thermal_plat
+		 * U_BOOT_DRIVER(imx_thermal) 
+		 */
+		ret = device_bind_by_name( parent, pre_reloc_only, entry, &dev );
+		if ( ret && ret != -EPERM ) {
 			dm_warn("No match for driver '%s'\n", entry->name);
 			if (!result || ret != -ENOENT)
 				result = ret;
@@ -167,8 +173,7 @@ int lists_bind_fdt(struct udevice *parent, const void *blob, int offset,
 		       compat);
 
 		for (entry = driver; entry != driver + n_ents; entry++) {
-			ret = driver_check_compatible(entry->of_match, &id,
-						      compat);
+			ret = driver_check_compatible(entry->of_match, &id, compat);
 			if (!ret)
 				break;
 		}
@@ -176,8 +181,7 @@ int lists_bind_fdt(struct udevice *parent, const void *blob, int offset,
 			continue;
 
 		dm_dbg("   - found match at '%s'\n", entry->name);
-		ret = device_bind_with_driver_data(parent, entry, name,
-						   id->data, offset, &dev);
+		ret = device_bind_with_driver_data(parent, entry, name, id->data, offset, &dev);
 		if (ret == -ENODEV) {
 			dm_dbg("Driver '%s' refuses to bind\n", entry->name);
 			continue;

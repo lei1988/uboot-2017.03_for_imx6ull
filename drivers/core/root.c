@@ -149,10 +149,13 @@ int dm_init(void)
 {
 	int ret;
 
-	if (gd->dm_root) {
+	/* 如果 gd->dm_root 被初始化过，则返回错误，表示已经被初始化过 */
+	if ( gd->dm_root ) {
 		dm_warn("Virtual root driver already exists!\n");
 		return -EINVAL;
 	}
+
+	/* 初始化 gd->uclass_root 为链表的 head */
 	INIT_LIST_HEAD(&DM_UCLASS_ROOT_NON_CONST);
 
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
@@ -161,9 +164,9 @@ int dm_init(void)
 	fix_devices();
 #endif
 
-	ret = device_bind_by_name(NULL, false, &root_info, &DM_ROOT_NON_CONST);
-	if (ret)
-		return ret;
+	ret = device_bind_by_name( NULL, false, &root_info, &DM_ROOT_NON_CONST );
+	if ( ret ){ return ret; }
+		
 #if CONFIG_IS_ENABLED(OF_CONTROL)
 	DM_ROOT_NON_CONST->of_offset = 0;
 #endif
@@ -196,16 +199,13 @@ int dm_scan_platdata(bool pre_reloc_only)
 }
 
 #if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
-int dm_scan_fdt_node(struct udevice *parent, const void *blob, int offset,
-		     bool pre_reloc_only)
+int dm_scan_fdt_node(struct udevice *parent, const void *blob, int offset, bool pre_reloc_only)
 {
 	int ret = 0, err;
 
-	for (offset = fdt_first_subnode(blob, offset);
-	     offset > 0;
-	     offset = fdt_next_subnode(blob, offset)) {
-		if (pre_reloc_only &&
-		    !fdt_getprop(blob, offset, "u-boot,dm-pre-reloc", NULL))
+	// 结束 for 循环的条件就是 offset 必须是小于 0 
+	for (offset = fdt_first_subnode(blob, offset); offset > 0; offset = fdt_next_subnode(blob, offset)) {
+		if (pre_reloc_only && !fdt_getprop(blob, offset, "u-boot,dm-pre-reloc", NULL))
 			continue;
 		if (!fdtdec_get_is_enabled(blob, offset)) {
 			dm_dbg("   - ignoring disabled device\n");
@@ -214,8 +214,7 @@ int dm_scan_fdt_node(struct udevice *parent, const void *blob, int offset,
 		err = lists_bind_fdt(parent, blob, offset, NULL);
 		if (err && !ret) {
 			ret = err;
-			debug("%s: ret=%d\n", fdt_get_name(blob, offset, NULL),
-			      ret);
+			debug("%s: ret=%d\n", fdt_get_name(blob, offset, NULL),ret);
 		}
 	}
 
@@ -254,7 +253,9 @@ int dm_init_and_scan(bool pre_reloc_only)
 		debug("dm_init() failed: %d\n", ret);
 		return ret;
 	}
-	ret = dm_scan_platdata(pre_reloc_only);
+
+	/* pre_reloc_only = ture */
+	ret = dm_scan_platdata( pre_reloc_only );
 	if (ret) {
 		debug("dm_scan_platdata() failed: %d\n", ret);
 		return ret;

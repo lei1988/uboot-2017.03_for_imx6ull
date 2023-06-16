@@ -47,18 +47,22 @@
 
 _start:
 
-#ifdef CONFIG_SYS_DV_NOR_BOOT_CFG                  @ CONFIG_SYS_DV_NOR_BOOT_CFG 没有定义
+/* CONFIG_SYS_DV_NOR_BOOT_CFG 没有定义 */
+#ifdef CONFIG_SYS_DV_NOR_BOOT_CFG
 	.word	CONFIG_SYS_DV_NOR_BOOT_CFG
 #endif
 
-	b	reset                                      /* reset 在arch/arm/cpu/armv7/start.S 文件中定义 */
-	ldr	pc, _undefined_instruction
-	ldr	pc, _software_interrupt
-	ldr	pc, _prefetch_abort
-	ldr	pc, _data_abort
-	ldr	pc, _not_used
-	ldr	pc, _irq
-	ldr	pc, _fiq
+	b	reset                                      /* 跳转到 reset */
+	/**
+	 * 以下是初始化中断向量表
+	 */
+	ldr	pc, _undefined_instruction                 /* 跳转到 undefined_instruction */
+	ldr	pc, _software_interrupt                    /* 跳转到 software_interrupt */
+	ldr	pc, _prefetch_abort                        /* 跳转到 prefetch_abort */
+	ldr	pc, _data_abort                            /* 跳转到 data_abort */
+	ldr	pc, _not_used                              /* 跳转到 not_used */
+	ldr	pc, _irq                                   /* 跳转到 irq */
+	ldr	pc, _fiq                                   /* 跳转到 fiq */
 
 #ifdef CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK
 /*

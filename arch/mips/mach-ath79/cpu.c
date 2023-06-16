@@ -54,8 +54,7 @@ int mach_cpu_init(void)
 	u32 rev = 0, ver = 1;
 	int i;
 
-	base = map_physmem(AR71XX_RESET_BASE, AR71XX_RESET_SIZE,
-			   MAP_NOCACHE);
+	base = map_physmem(AR71XX_RESET_BASE, AR71XX_RESET_SIZE, MAP_NOCACHE);
 
 	id = readl(base + AR71XX_RESET_REG_REV_ID);
 	major = id & REV_ID_MAJOR_MASK;

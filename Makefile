@@ -793,6 +793,7 @@ ALL-$(CONFIG_SPL_FRAMEWORK) += u-boot.img
 endif
 ALL-$(CONFIG_TPL) += tpl/u-boot-tpl.bin
 ALL-$(CONFIG_OF_SEPARATE) += u-boot.dtb
+ALL-$(CONFIG_OF_SEPARATE) += u-boot-dtb.img
 ifeq ($(CONFIG_SPL_FRAMEWORK),y)
 ALL-$(CONFIG_OF_SEPARATE) += u-boot-dtb.img
 endif
@@ -821,7 +822,7 @@ endif
 
 LDFLAGS_u-boot += $(LDFLAGS_FINAL)
 ifneq ($(CONFIG_SYS_TEXT_BASE),)
-LDFLAGS_u-boot += -Ttext $(CONFIG_SYS_TEXT_BASE)
+LDFLAGS_u-boot += -Ttext $(CONFIG_SYS_TEXT_BASE)  # 0x8780 0000
 endif
 
 # Normally we fill empty space with 0xff

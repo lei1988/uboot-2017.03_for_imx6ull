@@ -20,7 +20,7 @@ ENTRY(lowlevel_init)
 	 * Setup a temporary stack. Global data is not available yet.
 	 */
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_STACK)
-	ldr	sp, =CONFIG_SPL_STACK
+	ldr	sp, =CONFIG_SPL_STACK 
 #else
 	ldr	sp, =CONFIG_SYS_INIT_SP_ADDR
 #endif
@@ -35,7 +35,7 @@ ENTRY(lowlevel_init)
 #ifdef CONFIG_SPL_BUILD
 	ldr	r9, =gdata
 #else
-	sub	sp, sp, #GD_SIZE
+	sub	sp, sp, #GD_SIZE      @ GD_SIZE = 248  define for : include/generated/generic-asm-offsets.h
 	bic	sp, sp, #7
 	mov	r9, sp
 #endif

@@ -9,6 +9,10 @@
 
 #include <common.h>
 
+/**
+ * arch/arm/include/asm/global_data.h
+ * #define DECLARE_GLOBAL_DATA_PTR register volatile gd_t *gd asm ("r9")
+ */
 DECLARE_GLOBAL_DATA_PTR;
 
 /* Unfortunately x86 or ARM can't compile this code as gd cannot be assigned */
@@ -45,11 +49,20 @@ __weak void arch_setup_gd(struct global_data *gd_ptr)
 
 ulong board_init_f_alloc_reserve(ulong top)
 {
-	/* Reserve early malloc arena */
+	/** 
+	 * 留出早期的 malloc 内存区域和 gd 内存区域：
+	 * top = 0x91ff00 - 0x400 = 0x91FB00
+	 * top = 0x91FB00 - 248(sizeof(struct global_data)) = 0x91FA08
+	 * top = 0x91FB00 - (0x91FA08 % 16) = 0x91FB00 - 8 = 0x91FA00
+     */
 #if defined(CONFIG_SYS_MALLOC_F)
 	top -= CONFIG_SYS_MALLOC_F_LEN;
 #endif
 	/* LAST : reserve GD (rounded up to a multiple of 16 bytes) */
+	/**
+	 * top = 0x91ff00 - 1264(0x4f0) = 0x91FA10
+	 * top = top - (top % 16)
+	 */
 	top = rounddown(top-sizeof(struct global_data), 16);
 
 	return top;

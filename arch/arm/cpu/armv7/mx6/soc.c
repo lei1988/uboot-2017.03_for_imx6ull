@@ -339,18 +339,22 @@ static void clear_mmdc_ch_mask(void)
 
 #define OCOTP_MEM0_REFTOP_TRIM_SHIFT          8
 
+/**
+ * @brief 
+ * 1）等待bandgap（模拟带隙电压）稳定，如果CCM_ANALOG_MISC0(20C_8150)寄存器中的bit[7]为1，则表示已经稳定；
+ * 2）设置CCM_ANALOG_MISC0_SET(20C_8154)寄存器的bit[3]为1，使用基于带隙的偏置电流以获得最佳性能；
+ * 3）读取OCOTP_MEM0(21B_C480)寄存器的值，然后左移动8位，再按位与0x07将值赋给临时变量val；
+ * 4）将val值右移4位，赋值给CCM_ANALOG_MISC0_SET(20C_8154)，用于设置 REFTOP_VBGADJ
+ */
 static void init_bandgap(void)
 {
 	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
 	struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
 	struct fuse_bank *bank = &ocotp->bank[1];
-	struct fuse_bank1_regs *fuse =
-		(struct fuse_bank1_regs *)bank->fuse_regs;
+	struct fuse_bank1_regs *fuse = (struct fuse_bank1_regs *)bank->fuse_regs;
 	uint32_t val;
 
-	/*
-	 * Ensure the bandgap has stabilized.
-	 */
+	/* 读取CCM_ANALOG_MISC0的bit[7]模拟带隙电压状态标志位，1表示稳定 */
 	while (!(readl(&anatop->ana_misc0) & 0x80))
 		;
 	/*
@@ -358,7 +362,7 @@ static void init_bandgap(void)
 	 * outputs of the bandgap, the reftop_selfbiasoff bit should
 	 * be set.
 	 */
-	writel(BM_ANADIG_ANA_MISC0_REFTOP_SELBIASOFF, &anatop->ana_misc0_set);
+	writel( BM_ANADIG_ANA_MISC0_REFTOP_SELBIASOFF, &anatop->ana_misc0_set );
 	/*
 	 * On i.MX6ULL,we need to set VBGADJ bits according to the
 	 * REFTOP_TRIM[3:0] in fuse table
@@ -376,8 +380,7 @@ static void init_bandgap(void)
 		val >>= OCOTP_MEM0_REFTOP_TRIM_SHIFT;
 		val &= 0x7;
 
-		writel(val << BM_ANADIG_ANA_MISC0_REFTOP_VBGADJ_SHIFT,
-		       &anatop->ana_misc0_set);
+		writel(val << BM_ANADIG_ANA_MISC0_REFTOP_VBGADJ_SHIFT, &anatop->ana_misc0_set);
 	}
 }
 
@@ -502,9 +505,7 @@ static void imx_set_pcie_phy_power_down(void)
 
 int arch_cpu_init(void)
 {
-	if (!is_mx6sl() && !is_mx6sx()
-		&& !is_mx6ul() && !is_mx6ull() 
-		&& !is_mx6sll()) {
+	if (!is_mx6sl() && !is_mx6sx() && !is_mx6ul() && !is_mx6ull()  && !is_mx6sll()) {
 		/*
 		 * imx6sl doesn't have pcie at all.
 		 * this bit is not used by imx6sx anymore
@@ -517,7 +518,7 @@ int arch_cpu_init(void)
 		 * clear the ref_ssp_en bit16 of gpr1 to workaround it.
 		 * then warm-reset imx6q/dl/solo again.
 		 */
-		val = readl(IOMUXC_BASE_ADDR + 0x4);
+		val = readl(IOMUXC_BASE_ADDR + 0x4);  // IOMUXC_BASE_ADDR = 0x02000000 + 0x80000 + 0x60000 = 20E0000
 		if (val & (0x1 << 16)) {
 			val &= ~(0x1 << 16);
 			writel(val, IOMUXC_BASE_ADDR + 0x4);
@@ -525,11 +526,14 @@ int arch_cpu_init(void)
 		}
 	}
 
+	/* 初始化 AIPS，是AHB到IP总线的桥接器 */
 	init_aips();
 
+	/* 函数实现在arch/arm/cpu/armv7/mx6/soc.c 中，但什么也没有做 */
 	init_csu();
 
 	/* Need to clear MMDC_CHx_MASK to make warm reset work. */
+	/* 清除 CCM_CCDR 寄存器的 bit[17:16] 为0 */
 	clear_mmdc_ch_mask();
 
 	/*
@@ -537,6 +541,7 @@ int arch_cpu_init(void)
 	 * The self-bias circuit is used by the bandgap during startup.
 	 * This bit should be set after the bandgap has initialized.
 	 */
+	/* 初始化 模拟带隙电压 */
 	init_bandgap();
 
 	if (!is_mx6ul() && !is_mx6ull()) {
@@ -569,9 +574,7 @@ int arch_cpu_init(void)
 			 * to disable internal pull up.It can save about
 			 * 30uA power in SNVS mode.
 			 */
-			writel((readl(MX6UL_SNVS_LP_BASE_ADDR + 0x10) &
-			       (~0x1400)) | 0x400,
-			       MX6UL_SNVS_LP_BASE_ADDR + 0x10);
+			writel((readl(MX6UL_SNVS_LP_BASE_ADDR + 0x10) & (~0x1400)) | 0x400, MX6UL_SNVS_LP_BASE_ADDR + 0x10);
 		}
 	}
 
@@ -585,8 +588,7 @@ int arch_cpu_init(void)
 		 * register offset is different from i.MX6UL, since
 		 * i.MX6UL is fixed by ECO.
 		 */
-		writel(readl(MX6UL_SNVS_LP_BASE_ADDR) |
-			0x3, MX6UL_SNVS_LP_BASE_ADDR);
+		writel(readl(MX6UL_SNVS_LP_BASE_ADDR) | 0x3, MX6UL_SNVS_LP_BASE_ADDR);
 	}
 
 	/* Set perclk to source from OSC 24MHz */
@@ -835,7 +837,17 @@ void reset_misc(void)
 
 void s_init(void)
 {
+	/**
+     * ANATOP_BASE_ADDR = (AIPS1_OFF_BASE_ADDR + 0x48000) = 0x20C8000
+     *   - AIPS1_OFF_BASE_ADDR = (ATZ1_BASE_ADDR + 0x80000
+     * 	 - ATZ1_BASE_ADDR = AIPS1_ARB_BASE_ADDR = 0x02000000 
+	 */
 	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
+	/**
+	 * CCM_BASE_ADDR = (AIPS1_OFF_BASE_ADDR + 0x44000) = 0x20C4000
+	 * AIPS1_OFF_BASE_ADDR = (ATZ1_BASE_ADDR + 0x80000)
+	 * ATZ1_BASE_ADDR = AIPS1_ARB_BASE_ADDR = 0x02000000
+	 */
 	struct mxc_ccm_reg *ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 	u32 mask480;
 	u32 mask528;
@@ -853,28 +865,34 @@ void s_init(void)
 	 * not output clock after reset, MX6DL and MX6SL have added 396M pfd
 	 * workaround in ROM code, as bus clock need it
 	 */
+	mask480 = ANATOP_PFD_CLKGATE_MASK(0) | ANATOP_PFD_CLKGATE_MASK(1) | ANATOP_PFD_CLKGATE_MASK(2) |
+		      ANATOP_PFD_CLKGATE_MASK(3);
+	mask528 = ANATOP_PFD_CLKGATE_MASK(1) | ANATOP_PFD_CLKGATE_MASK(3);
 
-	mask480 = ANATOP_PFD_CLKGATE_MASK(0) |
-		ANATOP_PFD_CLKGATE_MASK(1) |
-		ANATOP_PFD_CLKGATE_MASK(2) |
-		ANATOP_PFD_CLKGATE_MASK(3);
-	mask528 = ANATOP_PFD_CLKGATE_MASK(1) |
-		ANATOP_PFD_CLKGATE_MASK(3);
-
-	reg = readl(&ccm->cbcmr);
-	periph2 = ((reg & MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_MASK)
-		>> MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_OFFSET);
-	periph1 = ((reg & MXC_CCM_CBCMR_PRE_PERIPH_CLK_SEL_MASK)
-		>> MXC_CCM_CBCMR_PRE_PERIPH_CLK_SEL_OFFSET);
+	/** 
+	 * arch/arm/include/asm/io.h
+	 * readl(val) = ({ u32 __v = (*(volatile unsigned int *)(val)); DMB sy; __v; })
+	 */
+	reg = readl(&ccm->cbcmr);  // CBCMR：CCM串行时钟多路寄存器
+	/**
+	 * MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_MASK = (3 << 21)
+	 * MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_OFFSET = 21
+	 */
+	periph2 = ((reg & MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_MASK) >> MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_OFFSET);
+	periph1 = ((reg & MXC_CCM_CBCMR_PRE_PERIPH_CLK_SEL_MASK) >> MXC_CCM_CBCMR_PRE_PERIPH_CLK_SEL_OFFSET);
 
 	/* Checking if PLL2 PFD0 or PLL2 PFD2 is using for periph clock */
 	if ((periph2 != 0x2) && (periph1 != 0x2))
 		mask528 |= ANATOP_PFD_CLKGATE_MASK(0);
 
-	if ((periph2 != 0x1) && (periph1 != 0x1) &&
-		(periph2 != 0x3) && (periph1 != 0x3))
+	if ((periph2 != 0x1) && (periph1 != 0x1) && (periph2 != 0x3) && (periph1 != 0x3))
 		mask528 |= ANATOP_PFD_CLKGATE_MASK(2);
-
+	/**
+	 * CCM_ANALOG_PFD_480_SET = 20C_80F4 
+	 * CCM_ANALOG_PFD_480_CLR = 20C_80F8
+	 * CCM_ANALOG_PFD_528_SET = 20C_8104
+	 * CCM_ANALOG_PFD_528_CLR = 20C_8108
+	 */
 	writel(mask480, &anatop->pfd_480_set);
 	writel(mask528, &anatop->pfd_528_set);
 	writel(mask480, &anatop->pfd_480_clr);
